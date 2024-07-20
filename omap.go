@@ -21,6 +21,7 @@ import (
 // The zero value of a Map is an empty Map ready to use.
 type Map[K cmp.Ordered, V any] struct {
 	_root *node[K, V]
+	cmp   func(K, K) int
 }
 
 // A MapFunc is a map[K]V ordered according to an arbitrary comparison function.
@@ -71,13 +72,17 @@ func (m *MapFunc[K, V]) root() **node[K, V] { return &m._root }
 // *pos is non-nil if k is present, nil if k is missing.
 // parent is nil if there are no nodes in the map, or if there is only one node and it's k.
 func (m *Map[K, V]) find(k K) (pos **node[K, V], parent *node[K, V]) {
+	if m.cmp == nil {
+		m.cmp = cmp.Compare[K]
+	}
 	pos = &m._root
 	for x := *pos; x != nil; x = *pos {
-		if x.key == k {
+		cmp := m.cmp(x.key, k)
+		if cmp == 0 {
 			break
 		}
 		parent = x
-		if x.key > k {
+		if cmp > 0 {
 			pos = &x.left
 		} else {
 			pos = &x.right
@@ -106,7 +111,25 @@ func (m *MapFunc[K, V]) find(k K) (pos **node[K, V], parent *node[K, V]) {
 
 // Get returns the value of m[key] and reports whether it exists.
 func (m *Map[K, V]) Get(key K) (V, bool) {
-	return get(m, key)
+	if m.cmp == nil {
+		m.cmp = cmp.Compare[K]
+	}
+	if m != nil {
+		x := m._root
+		for x != nil {
+			c := m.cmp(key, x.key)
+			if c == 0 {
+				return x.val, true
+			}
+			if c < 0 {
+				x = x.left
+			} else {
+				x = x.right
+			}
+		}
+	}
+	var zero V
+	return zero, false
 }
 
 // Get returns the value of m[key] and reports whether it exists.
