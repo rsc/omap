@@ -11,63 +11,75 @@ import (
 
 var getMap, getMapSeq *Map[int, int]
 
-func BenchmarkGet(b *testing.B) {
-	const N = 100000
-	if getMap == nil {
-		m := new(Map[int, int])
-		rand := rand.New(rand.NewPCG(1,1))
+func benchMaps(b *testing.B, bench func(b *testing.B, newMap func() Mapper[int, int])) {
+	for _, m := range maps {
+		b.Run(m.name, func(b *testing.B) { bench(b, m.new) })
+	}
+}
+
+func BenchmarkGetRandRand(b *testing.B) {
+	benchMaps(b, func(b *testing.B, newMap func() Mapper[int, int]) {
+		const N = 100000
+		m := newMap()
+		rand := rand.New(rand.NewPCG(1, 1))
+		perm := rand.Perm(N)
 		for _, v := range rand.Perm(N) {
 			m.Set(v, v)
 		}
-		getMap = m
+		//b.Logf("depth=%v", m.Depth())
+		perm = rand.Perm(N)
 		b.ResetTimer()
-	}
-	n := 0
-	for range b.N {
-		getMap.Get(n)
-		n++
-		if n == N {
-			n = 0
+		n := 0
+		for range b.N {
+			m.Get(perm[n])
+			n++
+			if n == N {
+				n = 0
+			}
 		}
-	}
+	})
 }
 
-func BenchmarkGetSeq(b *testing.B) {
-	const N = 100000
-	if getMapSeq == nil {
-		m := new(Map[int, int])
-		for i := range N {
-			m.Set(i, i)
+func BenchmarkGetSeqRand(b *testing.B) {
+	benchMaps(b, func(b *testing.B, newMap func() Mapper[int, int]) {
+		const N = 100000
+		rand := rand.New(rand.NewPCG(1, 1))
+		m := newMap()
+		for v := range N {
+			m.Set(v, v)
 		}
-		getMapSeq = m
+		//b.Logf("depth=%v", m.Depth())
+		perm := rand.Perm(N)
 		b.ResetTimer()
-	}
-	n := 0
-	for range b.N {
-		getMapSeq.Get(n)
-		n++
-		if n == N {
-			n = 0
+		n := 0
+		for range b.N {
+			m.Get(perm[n])
+			n++
+			if n == N {
+				n = 0
+			}
 		}
-	}
+	})
 }
 
 func BenchmarkSetDelete(b *testing.B) {
-	const N = 100000
-	perm := rand.Perm(N)
-	perm2 := rand.Perm(N)
-	m := new(Map[int, int])
-	b.ResetTimer()
-	n := 0
-	for range b.N {
-		if n < N {
-			m.Set(perm[n], perm[n])
-		} else {
-			m.Delete(perm2[n-N])
+	benchMaps(b, func(b *testing.B, newMap func() Mapper[int, int]) {
+		const N = 100000
+		perm := rand.Perm(N)
+		perm2 := rand.Perm(N)
+		m := newMap()
+		b.ResetTimer()
+		n := 0
+		for range b.N {
+			if n < N {
+				m.Set(perm[n], perm[n])
+			} else {
+				m.Delete(perm2[n-N])
+			}
+			n++
+			if n == 2*N {
+				n = 0
+			}
 		}
-		n++
-		if n == 2*N {
-			n = 0
-		}
-	}
+	})
 }
