@@ -223,12 +223,6 @@ func TestDeleteRange(t *testing.T) {
 			for hi := range 2*N + 1 {
 				for lo := range hi + 1 {
 					m := newMap()
-					if _, ok := m.(*llrbMap[int, int]); ok {
-						t.Fatal("llrbMap DeleteRange is broken")
-					}
-					if _, ok := m.(*llrbMapFunc[int, int]); ok {
-						t.Fatal("llrbMapFunc DeleteRange is broken")
-					}
 					_, slice := permute(m, N)
 					if lo < hi {
 						m.DeleteRange(hi, lo) // want no-op
@@ -304,12 +298,6 @@ func TestScanDeleteRange(t *testing.T) {
 			for N := range 8 {
 				for target := 1; target <= 2*N-1; target += 2 {
 					m := newMap()
-					if _, ok := m.(*llrbMap[int, int]); ok {
-						t.Fatal("llrbMap ScanDeleteRange is broken")
-					}
-					if _, ok := m.(*llrbMapFunc[int, int]); ok {
-						t.Fatal("llrbMapFunc ScanDeleteRange is broken")
-					}
 					_, slice := permute(m, N)
 					var have []int
 					var deleteLo, deleteHi int
